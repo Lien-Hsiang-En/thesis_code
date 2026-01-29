@@ -1,10 +1,17 @@
 #include "common.h"
-
+#include <stdbool.h>
 #include <linux/bpf.h>
 #include <linux/pkt_cls.h>
 #include <bpf/bpf_helpers.h>
 
 char LICENSE[] SEC("license") = "GPL";
+
+struct {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 1024);
+    __type(key, __be32);   // IPv4 daddr (network byte order)
+    __type(value, __u32);  // target ifindex
+} container_map SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_PERCPU_HASH);
@@ -35,7 +42,40 @@ static void update_stats(__u32 ifindex, __u32 bytes, bool redirected)
 SEC("tc")
 int tc_redirect(struct __sk_buff *skb)
 {
-    (void)skb;
+    void *data = (void *)(long)skb->data;
+    void *data_end = (void *)(long)skb->data_end;
+
+    struct ethhdr *eth = data;
+    if ((void *)(eth + 1) > data_end) {
+        update_stats(skb->ifindex, skb->len, false);
+        return TC_ACT_OK;
+    }
+
+    if (eth->h_proto != bpf_htons(ETH_P_IP)) {
+        update_stats(skb->ifindex, skb->len, false);
+        return TC_ACT_OK;
+    }
+
+    struct iphdr *ip = (void *)(eth + 1);
+    if ((void *)(ip + 1) > data_end) {
+        update_stats(skb->ifindex, skb->len, false);
+        return TC_ACT_OK;
+    }
+
+    if (ip->ihl < 5) {
+        update_stats(skb->ifindex, skb->len, false);
+        return TC_ACT_OK;
+    }
+
+    __u32 ip_hlen = ip->ihl * 4;
+    if ((void *)ip + ip_hlen > data_end) {
+        update_stats(skb->ifindex, skb->len, false);
+        return TC_ACT_OK;
+    }
+
+    __u32 *target_ifindex = bpf_map_lookup_elem(&container_map, &ip->daddr);
+    (void)target_ifindex;
+
     update_stats(skb->ifindex, skb->len, false);
     return TC_ACT_OK;
 }
