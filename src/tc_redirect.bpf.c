@@ -77,8 +77,13 @@ int tc_redirect(struct __sk_buff *skb)
     }
 
     __u32 *target_ifindex = bpf_map_lookup_elem(&container_map, &ip->daddr);
-    (void)target_ifindex;
+    if (!target_ifindex) {
+        update_stats(skb->ifindex, skb->len, false);
+        return TC_ACT_OK;
+    }
 
-    update_stats(skb->ifindex, skb->len, false);
+    update_stats(skb->ifindex, skb->len, true);
+
+    return bpf_redirect_peer(*target_ifindex, 0);
     return TC_ACT_OK;
 }
