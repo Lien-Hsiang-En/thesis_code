@@ -3,6 +3,9 @@
 #include <linux/bpf.h>
 #include <linux/pkt_cls.h>
 #include <bpf/bpf_helpers.h>
+#include <linux/if_ether.h>  // struct ethhdr, ETH_P_IP
+#include <linux/ip.h>        // struct iphdr
+#include <bpf/bpf_endian.h>
 
 char LICENSE[] SEC("license") = "GPL";
 
