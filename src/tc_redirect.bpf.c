@@ -54,4 +54,11 @@ struct {
     __type(value, struct stats);
 } stats_map SEC(".maps");
 
+// TC BPF program entry point (skeleton for now)
+SEC("tc")
+int tc_redirect(struct __sk_buff *skb)
+{
+    return TC_ACT_OK;
+}
+
 char LICENSE[] SEC("license") = "GPL";
