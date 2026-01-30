@@ -58,6 +58,33 @@ struct {
 SEC("tc")
 int tc_redirect(struct __sk_buff *skb)
 {
+    void *data = (void *)(long)skb->data;
+    void *data_end = (void *)(long)skb->data_end;
+    
+    // Parse Ethernet header
+    struct ethhdr *eth = data;
+    if ((void *)(eth + 1) > data_end)
+        return TC_ACT_OK;
+    
+    // Only process IPv4 packets
+    if (eth->h_proto != bpf_htons(ETH_P_IP))
+        return TC_ACT_OK;
+    
+    // Parse IP header
+    struct iphdr *ip = (void *)(eth + 1);
+    if ((void *)(ip + 1) > data_end)
+        return TC_ACT_OK;
+    
+    // Validate IP header length (minimum 5 * 4 = 20 bytes)
+    if (ip->ihl < 5)
+        return TC_ACT_OK;
+    
+    // Calculate actual IP header length (for packets with options)
+    __u32 ip_hlen = ip->ihl * 4;
+    if ((void *)ip + ip_hlen > data_end)
+        return TC_ACT_OK;
+    
+    
     return TC_ACT_OK;
 }
 
