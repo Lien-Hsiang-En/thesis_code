@@ -1,0 +1,19 @@
+# Build artifacts
+*.o
+*.skel.h
+vmlinux.h
+loader
+
+# Editor
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.pyc
+
+# Logs
+*.log
