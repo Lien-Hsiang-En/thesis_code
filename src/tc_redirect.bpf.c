@@ -54,6 +54,28 @@ struct {
     __type(value, struct stats);
 } stats_map SEC(".maps");
 
+void update_stats(__u32 ifindex, __u64 bytes, bool redirected)
+{
+    struct stats *s = bpf_map_lookup_elem(&stats_map, &ifindex);
+    if (s) {
+        s->packets++;
+        s->bytes += bytes;
+        if (redirected)
+            s->redirected++;
+        else
+            s->passed++;
+    } else {
+        // First packet on this interface, create entry
+        struct stats new_stats = {
+            .packets = 1,
+            .bytes = bytes,
+            .redirected = redirected ? 1 : 0,
+            .passed = redirected ? 0 : 1,
+        };
+        bpf_map_update_elem(&stats_map, &ifindex, &new_stats, BPF_ANY);
+    }
+}
+
 // TC BPF program entry point (skeleton for now)
 SEC("tc")
 int tc_redirect(struct __sk_buff *skb)
@@ -84,8 +106,21 @@ int tc_redirect(struct __sk_buff *skb)
     if ((void *)ip + ip_hlen > data_end)
         return TC_ACT_OK;
     
+     // Lookup destination IP in container map
+    __u32 *target_ifindex = bpf_map_lookup_elem(&container_map, &ip->daddr);
     
-    return TC_ACT_OK;
+    if (!target_ifindex) {
+        // Destination not in map, let packet take normal path
+        update_stats(skb->ifindex, skb->len, false);
+        return TC_ACT_OK;
+    }
+    
+    // Update statistics
+    update_stats(skb->ifindex, skb->len, true);
+    
+    // Redirect packet directly to target container's network namespace
+    // bpf_redirect_peer() bypasses bridge and iptables completely
+    return bpf_redirect_peer(*target_ifindex, 0);
 }
 
 char LICENSE[] SEC("license") = "GPL";
