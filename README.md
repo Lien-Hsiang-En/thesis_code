@@ -4,7 +4,7 @@ A TC-BPF based network acceleration solution for Docker containers using `bpf_re
 
 ## Features
 
-- **Low Latency**: 30-50% RTT reduction for inter-container traffic
+- **Low Latency**: 27% RTT reduction for inter-container traffic
 - **High Throughput**: 15-25% improvement in TCP throughput  
 - **Lightweight**: Single BPF program, minimal overhead
 - **Easy Deployment**: No Docker configuration changes required
