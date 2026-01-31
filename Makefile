@@ -18,7 +18,7 @@ LOADER := loader
 
 .PHONY: all clean vmlinux
 
-all: $(BPF_OBJ) $(BPF_SKEL)
+all: $(BPF_OBJ) $(BPF_SKEL) $(LOADER)
 
 # Generate vmlinux.h from running kernel's BTF
 vmlinux: $(VMLINUX)
