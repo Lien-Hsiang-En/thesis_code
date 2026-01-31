@@ -5,14 +5,14 @@ A TC-BPF based network acceleration solution for Docker containers using `bpf_re
 ## Features
 
 - **Low Latency**: 27% RTT reduction for inter-container traffic
-- **High Throughput**: 15-25% improvement in TCP throughput  
+- **High Throughput**: 30% improvement in TCP throughput  
 - **Lightweight**: Single BPF program, minimal overhead
 - **Easy Deployment**: No Docker configuration changes required
 - **CO-RE Support**: Compile once, run on different kernel versions
 
 ## Requirements
 
-- Linux kernel 5.10+ (for `bpf_redirect_peer()`)
+- Linux kernel 6.17+ (for `bpf_redirect_peer()`)
 - Docker 20.10+
 - Root privileges
 
